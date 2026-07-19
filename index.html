@@ -164,6 +164,31 @@
         </div>
     </div>
 
+    <!-- Modal for Editing Student -->
+<div id="editStudentModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close" onclick="closeEditModal()">&times;</span>
+        <h2>ערוך חניך</h2>
+        <form id="editStudentForm" class="form">
+            <input type="hidden" id="editStudentId">
+            <input type="text" id="editFirstName" placeholder="שם פרטי" required>
+            <input type="text" id="editLastName" placeholder="שם משפחה" required>
+            <input type="text" id="editGrade" placeholder="דרגה" required>
+            <input type="number" id="editAge" placeholder="גיל" required min="1" max="120">
+            
+            <select id="editClassSelect" required>
+                <option value="">בחר קבוצה</option>
+            </select>
+
+            <label class="checkbox-label">
+                <input type="checkbox" id="editRegisteredCheckbox">
+                רשום (Registered)
+            </label>
+
+            <button type="submit" class="btn btn-success">שמור שינויים</button>
+        </form>
+    </div>
+</div>
     <script src="script.js"></script>
 </body>
 </html>

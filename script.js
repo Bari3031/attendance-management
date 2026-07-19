@@ -409,7 +409,37 @@ function toggleAttendance(studentId, date, isPresent) {
 }
 
 function editStudent(studentId) {
-    alert('עריכה - עדיין לא מוטמעת');
+    const student = system.students.find(s => s.id === studentId);
+    if (!student) return;
+
+    // Set form values
+    document.getElementById('editStudentId').value = studentId;
+    document.getElementById('editFirstName').value = student.firstName;
+    document.getElementById('editLastName').value = student.lastName;
+    document.getElementById('editGrade').value = student.grade;
+    document.getElementById('editAge').value = student.age;
+    document.getElementById('editClassSelect').value = student.classId;
+    document.getElementById('editRegisteredCheckbox').checked = student.registrationStatus === 'Registered';
+
+    // Update class options
+    const select = document.getElementById('editClassSelect');
+    select.innerHTML = '';
+    system.getClasses().forEach(cls => {
+        const option = document.createElement('option');
+        option.value = cls.id;
+        option.textContent = cls.name;
+        select.appendChild(option);
+    });
+    select.value = student.classId;
+
+    // Show modal
+    const modal = document.getElementById('editStudentModal');
+    if (modal) modal.style.display = 'block';
+}
+
+function closeEditModal() {
+    const modal = document.getElementById('editStudentModal');
+    if (modal) modal.style.display = 'none';
 }
 
 function deleteStudentConfirm(studentId) {
@@ -599,6 +629,35 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Edit Student Form
+    const editStudentForm = document.getElementById('editStudentForm');
+    if (editStudentForm) {
+        editStudentForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const studentId = document.getElementById('editStudentId').value;
+            const firstName = document.getElementById('editFirstName').value;
+            const lastName = document.getElementById('editLastName').value;
+            const grade = document.getElementById('editGrade').value;
+            const age = document.getElementById('editAge').value;
+            const classId = document.getElementById('editClassSelect').value;
+            const registered = document.getElementById('editRegisteredCheckbox').checked;
+
+            system.updateStudent(studentId, {
+                firstName: firstName,
+                lastName: lastName,
+                grade: grade,
+                age: parseInt(age),
+                classId: classId,
+                registrationStatus: registered ? 'Registered' : 'Pending'
+            });
+
+            closeEditModal();
+            renderPage1();
+            alert('החניך עודכן בהצלחה!');
+        });
+    }
+
     const exportBtn = document.getElementById('exportBtn');
     if (exportBtn) {
         exportBtn.addEventListener('click', () => {
@@ -674,5 +733,13 @@ window.addEventListener('click', (e) => {
 document.addEventListener('change', (e) => {
     if (e.target.id === 'monthSelect') {
         renderMonthlyReport();
+    }
+});
+
+// Close edit modal when clicking outside
+window.addEventListener('click', (e) => {
+    const editModal = document.getElementById('editStudentModal');
+    if (e.target === editModal) {
+        editModal.style.display = 'none';
     }
 });
