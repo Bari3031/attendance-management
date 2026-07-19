@@ -22,31 +22,31 @@
 
 ## **PHASE 2: Page 1 - Daily Attendance**
 
-- [ ] **Task 3:** Build UI for Page 1
+- [X] **Task 3:** Build UI for Page 1
   - Navigation tabs (דף 1, דף 2, דף 3)
   - Tab system for Classes
   - Add/Edit/Delete Class buttons
   - Form to add new Student (שם, משפחה, דרגה, גיל, קבוצה)
 
-- [ ] **Task 4:** Implement Add Student functionality
+- [X] **Task 4:** Implement Add Student functionality
   - Form validation
   - Auto-set registration status to "Pending"
   - Auto-set startDate to today
   - Save to localStorage
   - Display confirmation
 
-- [ ] **Task 5:** Implement Class management
+- [X] **Task 5:** Implement Class management
   - Create new Class
   - Edit Class name
   - Delete Class (with warning)
   - Display active Class in tab
 
-- [ ] **Task 6:** Display Students in Daily Attendance table
+- [X] **Task 6:** Display Students in Daily Attendance table
   - Show students for selected Class
   - Display with status tag (🟢 Registered / 🔴 Pending)
   - Display date column
 
-- [ ] **Task 7:** Implement Attendance marking (✓/✗)
+- [X] **Task 7:** Implement Attendance marking (✓/✗)
   - Checkbox/toggle for each student per day
   - Save attendance to localStorage
   - Visual feedback (✓ / ✗ / -)
@@ -66,18 +66,18 @@
 
 ## **PHASE 3: Page 2 - Pending Students**
 
-- [ ] **Task 10:** Build UI for Page 2
+- [X] **Task 10:** Build UI for Page 2
   - Navigation to Page 2
   - Display ONLY Pending students
   - Show: Name, Start Date, Class
 
-- [ ] **Task 11:** Implement "Mark as Registered" (✓ button)
+- [X] **Task 11:** Implement "Mark as Registered" (✓ button)
   - Change status from Pending to Registered
   - Update localStorage
   - Remove from Pending list
   - Show confirmation
 
-- [ ] **Task 12:** Implement "Delete" (❌ button)
+- [X] **Task 12:** Implement "Delete" (❌ button)
   - Delete student completely from database
   - Update localStorage
   - Remove from all lists
