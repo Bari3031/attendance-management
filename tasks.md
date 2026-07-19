@@ -52,7 +52,7 @@
   - Visual feedback (✓ / ✗ / -)
   - Only mark for today's date
 
-- [ ] **Task 8:** Edit Student functionality
+- [X] **Task 8:** Edit Student functionality
   - Edit form (שם, משפחה, דרגה, גיל, קבוצה)
   - Save changes
   - Update display
