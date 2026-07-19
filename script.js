@@ -16,7 +16,6 @@ class AttendanceSystem {
         this.loadData();
     }
 
-    // Initialize or load data from localStorage
     loadData() {
         const saved = localStorage.getItem('attendanceData');
         if (saved) {
@@ -32,7 +31,6 @@ class AttendanceSystem {
         }
     }
 
-    // Initialize with default data
     initializeDefaults() {
         const defaultClass = {
             id: this.generateId(),
@@ -44,7 +42,6 @@ class AttendanceSystem {
         this.saveData();
     }
 
-    // Save all data to localStorage
     saveData() {
         const data = {
             classes: this.classes,
@@ -55,14 +52,9 @@ class AttendanceSystem {
         localStorage.setItem('attendanceData', JSON.stringify(data));
     }
 
-    // Generate unique ID
     generateId() {
         return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     }
-
-    // ============================================
-    // CLASS MANAGEMENT
-    // ============================================
 
     addClass(name) {
         const newClass = {
@@ -104,10 +96,6 @@ class AttendanceSystem {
     getClassById(classId) {
         return this.classes.find(c => c.id === classId);
     }
-
-    // ============================================
-    // STUDENT MANAGEMENT
-    // ============================================
 
     addStudent(firstName, lastName, grade, age, classId, registered = false) {
         const newStudent = {
@@ -159,10 +147,6 @@ class AttendanceSystem {
         return this.students;
     }
 
-    // ============================================
-    // ATTENDANCE MANAGEMENT
-    // ============================================
-
     markAttendance(studentId, date, status) {
         const student = this.students.find(s => s.id === studentId);
         if (!student) return false;
@@ -199,10 +183,6 @@ class AttendanceSystem {
         });
     }
 
-    // ============================================
-    // IMPORT / EXPORT
-    // ============================================
-
     exportToJSON() {
         const data = {
             classes: this.classes,
@@ -228,21 +208,6 @@ class AttendanceSystem {
             console.error('Import failed:', error);
             return false;
         }
-    }
-
-    // ============================================
-    // ANNUAL RESET
-    // ============================================
-
-    checkAndResetIfNeeded() {
-        const today = new Date();
-        if (today.getMonth() === 8 && today.getDate() === 1) {
-            this.attendance = [];
-            this.saveData();
-            console.log('Annual reset performed');
-            return true;
-        }
-        return false;
     }
 
     resetAnnual() {
@@ -307,6 +272,87 @@ function showPage(pageId) {
 }
 
 // ============================================
+// CLASS MANAGEMENT FUNCTIONS (Outside DOMContentLoaded)
+// ============================================
+
+function editClass(classId) {
+    const cls = system.getClassById(classId);
+    if (!cls) return;
+
+    document.getElementById('editClassId').value = classId;
+    document.getElementById('editClassName').value = cls.name;
+
+    const modal = document.getElementById('editClassModal');
+    if (modal) modal.style.display = 'block';
+}
+
+function closeEditClassModal() {
+    const modal = document.getElementById('editClassModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function deleteClassConfirm(classId) {
+    const cls = system.getClassById(classId);
+    if (confirm(`האם אתה בטוח שברצונך למחוק את הקבוצה "${cls.name}"? זה ימחק גם את כל החניכים בקבוצה!`)) {
+        system.deleteClass(classId);
+        renderPage1();
+        alert('הקבוצה נמחקה בהצלחה!');
+    }
+}
+
+// ============================================
+// STUDENT MANAGEMENT FUNCTIONS
+// ============================================
+
+function editStudent(studentId) {
+    const student = system.students.find(s => s.id === studentId);
+    if (!student) return;
+
+    document.getElementById('editStudentId').value = studentId;
+    document.getElementById('editFirstName').value = student.firstName;
+    document.getElementById('editLastName').value = student.lastName;
+    document.getElementById('editGrade').value = student.grade;
+    document.getElementById('editAge').value = student.age;
+    document.getElementById('editClassSelect').value = student.classId;
+    document.getElementById('editRegisteredCheckbox').checked = student.registrationStatus === 'Registered';
+
+    const select = document.getElementById('editClassSelect');
+    select.innerHTML = '';
+    system.getClasses().forEach(cls => {
+        const option = document.createElement('option');
+        option.value = cls.id;
+        option.textContent = cls.name;
+        select.appendChild(option);
+    });
+    select.value = student.classId;
+
+    const modal = document.getElementById('editStudentModal');
+    if (modal) modal.style.display = 'block';
+}
+
+function closeEditModal() {
+    const modal = document.getElementById('editStudentModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function deleteStudentConfirm(studentId) {
+    if (confirm('האם אתה בטוח שברצונך למחוק חניך זה?')) {
+        system.deleteStudent(studentId);
+        renderPage1();
+    }
+}
+
+function toggleAttendance(studentId, date, isPresent) {
+    system.markAttendance(studentId, date, isPresent ? 'present' : 'absent');
+    renderPage1();
+}
+
+function registerStudent(studentId) {
+    system.markStudentAsRegistered(studentId);
+    renderPage2();
+}
+
+// ============================================
 // PAGE 1: DAILY ATTENDANCE
 // ============================================
 
@@ -323,14 +369,44 @@ function renderClassTabs(containerId) {
     container.innerHTML = '';
 
     system.getClasses().forEach(cls => {
+        const tabWrapper = document.createElement('div');
+        tabWrapper.style.display = 'flex';
+        tabWrapper.style.gap = '5px';
+        tabWrapper.style.alignItems = 'center';
+
         const tab = document.createElement('button');
         tab.className = `class-tab ${cls.id === system.currentClassId ? 'active' : ''}`;
         tab.textContent = cls.name;
+        tab.style.flex = '1';
         tab.onclick = () => {
             system.currentClassId = cls.id;
             renderPage1();
         };
-        container.appendChild(tab);
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'btn btn-info';
+        editBtn.textContent = '✏️';
+        editBtn.style.padding = '5px 10px';
+        editBtn.style.fontSize = '0.8em';
+        editBtn.onclick = (e) => {
+            e.stopPropagation();
+            editClass(cls.id);
+        };
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn btn-danger';
+        deleteBtn.textContent = '🗑️';
+        deleteBtn.style.padding = '5px 10px';
+        deleteBtn.style.fontSize = '0.8em';
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            deleteClassConfirm(cls.id);
+        };
+
+        tabWrapper.appendChild(tab);
+        tabWrapper.appendChild(editBtn);
+        tabWrapper.appendChild(deleteBtn);
+        container.appendChild(tabWrapper);
     });
 }
 
@@ -403,52 +479,6 @@ function renderAttendanceTable() {
     });
 }
 
-function toggleAttendance(studentId, date, isPresent) {
-    system.markAttendance(studentId, date, isPresent ? 'present' : 'absent');
-    renderPage1();
-}
-
-function editStudent(studentId) {
-    const student = system.students.find(s => s.id === studentId);
-    if (!student) return;
-
-    // Set form values
-    document.getElementById('editStudentId').value = studentId;
-    document.getElementById('editFirstName').value = student.firstName;
-    document.getElementById('editLastName').value = student.lastName;
-    document.getElementById('editGrade').value = student.grade;
-    document.getElementById('editAge').value = student.age;
-    document.getElementById('editClassSelect').value = student.classId;
-    document.getElementById('editRegisteredCheckbox').checked = student.registrationStatus === 'Registered';
-
-    // Update class options
-    const select = document.getElementById('editClassSelect');
-    select.innerHTML = '';
-    system.getClasses().forEach(cls => {
-        const option = document.createElement('option');
-        option.value = cls.id;
-        option.textContent = cls.name;
-        select.appendChild(option);
-    });
-    select.value = student.classId;
-
-    // Show modal
-    const modal = document.getElementById('editStudentModal');
-    if (modal) modal.style.display = 'block';
-}
-
-function closeEditModal() {
-    const modal = document.getElementById('editStudentModal');
-    if (modal) modal.style.display = 'none';
-}
-
-function deleteStudentConfirm(studentId) {
-    if (confirm('האם אתה בטוח שברצונך למחוק חניך זה?')) {
-        system.deleteStudent(studentId);
-        renderPage1();
-    }
-}
-
 // ============================================
 // PAGE 2: PENDING STUDENTS
 // ============================================
@@ -481,11 +511,6 @@ function renderPage2() {
         `;
         container.appendChild(card);
     });
-}
-
-function registerStudent(studentId) {
-    system.markStudentAsRegistered(studentId);
-    renderPage2();
 }
 
 // ============================================
@@ -569,12 +594,14 @@ function renderSettings() {
 // ============================================
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Navigation
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             showPage(e.target.dataset.page);
         });
     });
 
+    // Add Student Form
     const addStudentForm = document.getElementById('addStudentForm');
     if (addStudentForm) {
         addStudentForm.addEventListener('submit', (e) => {
@@ -597,6 +624,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Add Class Button
     const addClassBtn = document.getElementById('addClassBtn');
     if (addClassBtn) {
         addClassBtn.addEventListener('click', () => {
@@ -605,6 +633,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Close Add Class Modal
     const closeBtn = document.querySelector('.close');
     if (closeBtn) {
         closeBtn.addEventListener('click', () => {
@@ -613,6 +642,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Add Class Form
     const addClassForm = document.getElementById('addClassForm');
     if (addClassForm) {
         addClassForm.addEventListener('submit', (e) => {
@@ -658,6 +688,23 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Edit Class Form
+    const editClassForm = document.getElementById('editClassForm');
+    if (editClassForm) {
+        editClassForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const classId = document.getElementById('editClassId').value;
+            const className = document.getElementById('editClassName').value;
+
+            system.updateClass(classId, className);
+            closeEditClassModal();
+            renderPage1();
+            alert('הקבוצה עודכנה בהצלחה!');
+        });
+    }
+
+    // Export Button
     const exportBtn = document.getElementById('exportBtn');
     if (exportBtn) {
         exportBtn.addEventListener('click', () => {
@@ -671,6 +718,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Import Button
     const importBtn = document.getElementById('importBtn');
     const importFile = document.getElementById('importFile');
     if (importBtn && importFile) {
@@ -695,6 +743,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Reset Button
     const resetBtn = document.getElementById('resetBtn');
     if (resetBtn) {
         resetBtn.addEventListener('click', () => {
@@ -705,6 +754,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Clear All Button
     const clearAllBtn = document.getElementById('clearAllBtn');
     if (clearAllBtn) {
         clearAllBtn.addEventListener('click', () => {
@@ -715,14 +765,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Set today's date in footer
     const footerDate = document.getElementById('footerDate');
     if (footerDate) {
         footerDate.textContent = formatDate(getToday());
     }
 
+    // Initial page
     showPage('page1');
 });
 
+// ============================================
+// MODAL CLICK HANDLERS (Outside DOMContentLoaded)
+// ============================================
+
+// Close Add Class Modal when clicking outside
 window.addEventListener('click', (e) => {
     const modal = document.getElementById('addClassModal');
     if (e.target === modal) {
@@ -730,16 +787,25 @@ window.addEventListener('click', (e) => {
     }
 });
 
-document.addEventListener('change', (e) => {
-    if (e.target.id === 'monthSelect') {
-        renderMonthlyReport();
-    }
-});
-
-// Close edit modal when clicking outside
+// Close Edit Student Modal when clicking outside
 window.addEventListener('click', (e) => {
     const editModal = document.getElementById('editStudentModal');
     if (e.target === editModal) {
         editModal.style.display = 'none';
+    }
+});
+
+// Close Edit Class Modal when clicking outside
+window.addEventListener('click', (e) => {
+    const editClassModal = document.getElementById('editClassModal');
+    if (e.target === editClassModal) {
+        editClassModal.style.display = 'none';
+    }
+});
+
+// Month Selector Change
+document.addEventListener('change', (e) => {
+    if (e.target.id === 'monthSelect') {
+        renderMonthlyReport();
     }
 });

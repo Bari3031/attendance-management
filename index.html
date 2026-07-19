@@ -189,6 +189,21 @@
         </form>
     </div>
 </div>
+
+<!-- Modal for Editing Class -->
+<div id="editClassModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close" onclick="closeEditClassModal()">&times;</span>
+        <h2>ערוך קבוצה</h2>
+        <form id="editClassForm" class="form">
+            <input type="hidden" id="editClassId">
+            <input type="text" id="editClassName" placeholder="שם הקבוצה" required>
+            <button type="submit" class="btn btn-success">שמור שינויים</button>
+        </form>
+    </div>
+</div>
+
+
     <script src="script.js"></script>
 </body>
 </html>
