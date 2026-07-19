@@ -11,7 +11,7 @@
   - Basic HTML skeleton (בעברית)
   - Git init + first commit
   
-- [ ] **Task 2:** Implement localStorage setup + Data Model
+- [X] **Task 2:** Implement localStorage setup + Data Model
   - `Student` class
   - `Class` class
   - `Attendance` class
