@@ -6,7 +6,7 @@
 
 ## **PHASE 1: Setup + Base Structure**
 
-- [ ] **Task 1:** Project initialization + folder structure
+- [X] **Task 1:** Project initialization + folder structure
   - Create `index.html`, `style.css`, `script.js`
   - Basic HTML skeleton (בעברית)
   - Git init + first commit
