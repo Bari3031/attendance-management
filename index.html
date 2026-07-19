@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מערכת ניהול נוכחות - אומניות לחימה</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>🥋 מערכת ניהול נוכחות</h1>
+            <p>מערכת לניהול נוכחות חניכים באומניות לחימה</p>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="nav-tabs">
+            <button class="nav-btn active" data-page="page1">📝 סימון נוכחות</button>
+            <button class="nav-btn" data-page="page2">⏳ חניכים לטיפול</button>
+            <button class="nav-btn" data-page="page3">📊 דוח חודשי</button>
+            <button class="nav-btn" data-page="settings">⚙️ הגדרות</button>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+
+            <!-- PAGE 1: Daily Attendance -->
+            <div id="page1" class="page active">
+                <h2>📝 סימון נוכחות ליום</h2>
+                
+                <!-- Classes Tab Bar -->
+                <div class="classes-tabs">
+                    <div id="classTabsContainer" class="class-tabs-list">
+                        <!-- Generated dynamically -->
+                    </div>
+                    <button id="addClassBtn" class="btn btn-primary">➕ קבוצה חדשה</button>
+                </div>
+
+                <!-- Add New Student Form -->
+                <section class="add-student-section">
+                    <h3>➕ הוסף חניך חדש</h3>
+                    <form id="addStudentForm" class="form">
+                        <input type="text" id="firstName" placeholder="שם פרטי" required>
+                        <input type="text" id="lastName" placeholder="שם משפחה" required>
+                        <input type="text" id="grade" placeholder="דרגה (למשל: חגורה לבנה)" required>
+                        <input type="number" id="age" placeholder="גיל" required min="1" max="120">
+                        
+                        <select id="classSelect" required>
+                            <option value="">בחר קבוצה</option>
+                        </select>
+
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="registeredCheckbox">
+                            רשום (Registered)
+                        </label>
+
+                        <button type="submit" class="btn btn-success">הוסף חניך</button>
+                    </form>
+                </section>
+
+                <!-- Attendance Table -->
+                <section class="attendance-section">
+                    <h3 id="attendanceDate">סימון נוכחות ל-<span id="todayDate"></span></h3>
+                    <table id="attendanceTable" class="attendance-table">
+                        <thead>
+                            <tr>
+                                <th>שם חניך</th>
+                                <th>דרגה</th>
+                                <th>סטטוס</th>
+                                <th>נוכחות</th>
+                                <th>פעולות</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Generated dynamically -->
+                        </tbody>
+                    </table>
+                </section>
+            </div>
+
+            <!-- PAGE 2: Pending Students -->
+            <div id="page2" class="page">
+                <h2>⏳ חניכים לטיפול (Pending)</h2>
+                <div id="pendingStudentsContainer" class="pending-container">
+                    <!-- Generated dynamically -->
+                </div>
+            </div>
+
+            <!-- PAGE 3: Monthly Report -->
+            <div id="page3" class="page">
+                <h2>📊 דוח נוכחות חודשי</h2>
+                
+                <div class="report-controls">
+                    <label for="monthSelect">חודש:</label>
+                    <select id="monthSelect">
+                        <!-- Generated dynamically -->
+                    </select>
+                </div>
+
+                <!-- Classes Tab Bar for Report -->
+                <div class="classes-tabs">
+                    <div id="reportClassTabsContainer" class="class-tabs-list">
+                        <!-- Generated dynamically -->
+                    </div>
+                </div>
+
+                <div id="monthlyReportContainer">
+                    <table id="monthlyReportTable" class="monthly-table">
+                        <thead>
+                            <!-- Generated dynamically -->
+                        </thead>
+                        <tbody>
+                            <!-- Generated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- PAGE 4: Settings -->
+            <div id="settings" class="page">
+                <h2>⚙️ הגדרות</h2>
+                
+                <section class="settings-section">
+                    <h3>📥 ייבוא / 📤 ייצוא</h3>
+                    <div class="settings-buttons">
+                        <button id="exportBtn" class="btn btn-info">📤 ייצוא לJSON</button>
+                        <button id="importBtn" class="btn btn-info">📥 ייבוא מקובץ</button>
+                        <input type="file" id="importFile" accept=".json" style="display: none;">
+                    </div>
+                </section>
+
+                <section class="settings-section">
+                    <h3>🔄 ניהול נתונים</h3>
+                    <button id="resetBtn" class="btn btn-warning">🔄 Reset שנתי (1.09)</button>
+                    <button id="clearAllBtn" class="btn btn-danger">🗑️ מחק הכל</button>
+                </section>
+
+                <section class="settings-section">
+                    <h3>👥 ניהול קבוצות</h3>
+                    <div id="classesManagementContainer">
+                        <!-- Generated dynamically -->
+                    </div>
+                </section>
+            </div>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>© 2025 מערכת ניהול נוכחות | תאריך: <span id="footerDate"></span></p>
+        </footer>
+    </div>
+
+    <!-- Modal for Adding Class -->
+    <div id="addClassModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>קבוצה חדשה</h2>
+            <form id="addClassForm" class="form">
+                <input type="text" id="className" placeholder="שם הקבוצה (למשל: קבוצה א')" required>
+                <button type="submit" class="btn btn-success">צור קבוצה</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
