@@ -57,7 +57,7 @@
   - Save changes
   - Update display
 
-- [ ] **Task 9:** Delete Student from Daily Attendance
+- [X] **Task 9:** Delete Student from Daily Attendance
   - Delete button with warning
   - Remove from localStorage
   - Update display
@@ -87,19 +87,19 @@
 
 ## **PHASE 4: Page 3 - Monthly Report**
 
-- [ ] **Task 13:** Build UI for Page 3
+- [X] **Task 13:** Build UI for Page 3
   - Navigation to Page 3
   - Class tabs
   - Month/Year selector (or current month)
   - Table structure (Students x Days)
 
-- [ ] **Task 14:** Implement Monthly Report table
+- [X] **Task 14:** Implement Monthly Report table
   - Rows = Students for selected Class
   - Columns = Days of month (1-30/31)
   - Cell values = ✓ (present) / ✗ (absent) / - (no data)
   - Add status tags (🟢 / 🔴)
 
-- [ ] **Task 15:** Add interactivity to Monthly Report
+- [X] **Task 15:** Add interactivity to Monthly Report
   - Click cell to toggle attendance (if needed)
   - Or read-only view (TBD)
 
@@ -107,19 +107,19 @@
 
 ## **PHASE 5: Import/Export + Advanced Features**
 
-- [ ] **Task 16:** Implement Export functionality
+- [X] **Task 16:** Implement Export functionality
   - Export to JSON (download)
   - Export to CSV (download)
   - File format: includes Classes, Students, Attendance
 
-- [ ] **Task 17:** Implement Import functionality
+- [X] **Task 17:** Implement Import functionality
   - File upload input
   - Parse JSON/CSV
   - Validate data
   - Merge or replace existing data (user choice)
   - Update localStorage
 
-- [ ] **Task 18:** Implement Annual Reset (1.09)
+- [X] **Task 18:** Implement Annual Reset (1.09)
   - Check if date >= 1.09
   - Clear attendance records
   - Keep student list (or option to reload previous year)
