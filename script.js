@@ -14,6 +14,7 @@ class AttendanceSystem {
         this.attendance = [];
         this.currentClassId = null;
         this.loadData();
+        this.checkAndPerformAnnualReset();
     }
 
     loadData() {
@@ -23,6 +24,16 @@ class AttendanceSystem {
             this.classes = data.classes || [];
             this.students = data.students || [];
             this.attendance = data.attendance || [];
+            
+            // Migration: הוסף activeYears לחניכים ישנים שלא קיים להם
+            const currentYear = new Date().getFullYear();
+            this.students.forEach(student => {
+                if (!student.activeYears) {
+                    const startYear = new Date(student.startDate).getFullYear();
+                    student.activeYears = [startYear];
+                }
+            });
+            
             if (this.classes.length > 0) {
                 this.currentClassId = this.classes[0].id;
             }
@@ -54,6 +65,36 @@ class AttendanceSystem {
 
     generateId() {
         return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    // ============================================
+    // ANNUAL RESET - 1.09 Logic
+    // ============================================
+
+    checkAndPerformAnnualReset() {
+        const today = new Date();
+        const lastReset = localStorage.getItem('lastAnnualReset');
+        const currentYear = today.getFullYear();
+        const septemberFirst = new Date(currentYear, 8, 1); // 1.09
+
+        // Check if today is September 1st or later, and we haven't reset this year
+        if (today >= septemberFirst && (!lastReset || new Date(lastReset).getFullYear() < currentYear)) {
+            this.performAnnualReset();
+            localStorage.setItem('lastAnnualReset', new Date().toISOString());
+        }
+    }
+
+    performAnnualReset() {
+        // סימון כל חניך ל-Pending
+        this.students.forEach(student => {
+            student.registrationStatus = 'Pending';
+        });
+        
+        // מחיקת כל רשומות הנוכחות
+        this.attendance = [];
+        
+        this.saveData();
+        alert('🎉 שנה חדשה! כל החניכים חוזרו ל-Pending - צריך להרשום מחדש!');
     }
 
     addClass(name) {
@@ -98,6 +139,7 @@ class AttendanceSystem {
     }
 
     addStudent(firstName, lastName, grade, age, classId, registered = false) {
+        const currentYear = new Date().getFullYear();
         const newStudent = {
             id: this.generateId(),
             firstName: firstName,
@@ -107,11 +149,36 @@ class AttendanceSystem {
             classId: classId,
             registrationStatus: registered ? 'Registered' : 'Pending',
             startDate: new Date().toISOString().split('T')[0],
+            activeYears: [currentYear],
             createdAt: new Date().toISOString()
         };
         this.students.push(newStudent);
         this.saveData();
         return newStudent;
+    }
+
+    addExistingStudent(studentId, classId) {
+        const student = this.students.find(s => s.id === studentId);
+        if (student) {
+            const currentYear = new Date().getFullYear();
+            // שמור את ה-ID המקורי
+            student.registrationStatus = 'Pending';
+            student.startDate = new Date().toISOString().split('T')[0];
+            student.classId = classId;
+            
+            // הוסף את השנה הנוכחית ל-activeYears
+            if (!student.activeYears) {
+                student.activeYears = [];
+            }
+            if (!student.activeYears.includes(currentYear)) {
+                student.activeYears.push(currentYear);
+                student.activeYears.sort();
+            }
+            
+            this.saveData();
+            return true;
+        }
+        return false;
     }
 
     updateStudent(studentId, updates) {
@@ -132,7 +199,12 @@ class AttendanceSystem {
     }
 
     getStudentsByClass(classId) {
-        return this.students.filter(s => s.classId === classId);
+        const currentYear = new Date().getFullYear();
+        return this.students.filter(s => 
+            s.classId === classId && 
+            s.activeYears && 
+            s.activeYears.includes(currentYear)
+        );
     }
 
     getPendingStudents() {
@@ -211,9 +283,7 @@ class AttendanceSystem {
     }
 
     resetAnnual() {
-        this.attendance = [];
-        this.saveData();
-        return true;
+        this.performAnnualReset();
     }
 }
 
@@ -272,7 +342,7 @@ function showPage(pageId) {
 }
 
 // ============================================
-// CLASS MANAGEMENT FUNCTIONS (Outside DOMContentLoaded)
+// CLASS MANAGEMENT FUNCTIONS
 // ============================================
 
 function editClass(classId) {
@@ -293,10 +363,10 @@ function closeEditClassModal() {
 
 function deleteClassConfirm(classId) {
     const cls = system.getClassById(classId);
-    if (confirm(`האם אתה בטוח שברצונך למחוק את הקבוצה "${cls.name}"? זה ימחק גם את כל החניכים בקבוצה!`)) {
+    if (confirm(`מחק את הקבוצה "${cls.name}"? זה ימחק גם את כל החניכים!`)) {
         system.deleteClass(classId);
+        showNotification(`✅ הקבוצה "${cls.name}" נמחקה בהצלחה!`, 'success');
         renderPage1();
-        alert('הקבוצה נמחקה בהצלחה!');
     }
 }
 
@@ -336,8 +406,10 @@ function closeEditModal() {
 }
 
 function deleteStudentConfirm(studentId) {
-    if (confirm('האם אתה בטוח שברצונך למחוק חניך זה?')) {
+    const student = system.students.find(s => s.id === studentId);
+    if (confirm(`מחק את ${student.firstName} ${student.lastName}?`)) {
         system.deleteStudent(studentId);
+        showNotification(`✅ ${student.firstName} נמחק בהצלחה!`, 'success');
         renderPage1();
     }
 }
@@ -348,8 +420,34 @@ function toggleAttendance(studentId, date, isPresent) {
 }
 
 function registerStudent(studentId) {
+    const student = system.students.find(s => s.id === studentId);
     system.markStudentAsRegistered(studentId);
+    showNotification(`✅ ${student.firstName} רשום בהצלחה!`, 'success');
     renderPage2();
+}
+
+// ============================================
+// EXISTING STUDENT FUNCTIONS
+// ============================================
+
+function openAddExistingStudentModal() {
+    const select = document.getElementById('existingStudentSelect');
+    select.innerHTML = '<option value="">בחר חניך</option>';
+    
+    system.getAllStudents().forEach(student => {
+        const option = document.createElement('option');
+        option.value = student.id;
+        option.textContent = `${student.firstName} ${student.lastName} (${student.grade})`;
+        select.appendChild(option);
+    });
+
+    const modal = document.getElementById('addExistingStudentModal');
+    if (modal) modal.style.display = 'block';
+}
+
+function closeAddExistingModal() {
+    const modal = document.getElementById('addExistingStudentModal');
+    if (modal) modal.style.display = 'none';
 }
 
 // ============================================
@@ -519,8 +617,28 @@ function renderPage2() {
 
 function renderPage3() {
     renderClassTabs('reportClassTabsContainer');
+    updateYearSelector();
     updateMonthSelector();
     renderMonthlyReport();
+}
+
+function updateYearSelector() {
+    const select = document.getElementById('yearSelect');
+    if (!select) return;
+
+    const today = new Date();
+    select.innerHTML = '';
+
+    // Last 3 years + current
+    for (let i = 3; i >= 0; i--) {
+        const year = today.getFullYear() - i;
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year;
+        select.appendChild(option);
+    }
+
+    select.value = today.getFullYear();
 }
 
 function updateMonthSelector() {
@@ -528,17 +646,25 @@ function updateMonthSelector() {
     if (!select) return;
 
     const today = new Date();
+    const yearSelect = document.getElementById('yearSelect');
+    const selectedYear = yearSelect ? parseInt(yearSelect.value) : today.getFullYear();
+
     select.innerHTML = '';
 
-    for (let i = 11; i >= 0; i--) {
-        const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    for (let i = 0; i < 12; i++) {
+        const date = new Date(selectedYear, i, 1);
         const option = document.createElement('option');
         option.value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
         option.textContent = date.toLocaleDateString('he-IL', { year: 'numeric', month: 'long' });
         select.appendChild(option);
     }
 
-    select.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    if (selectedYear === today.getFullYear()) {
+        select.value = currentMonth;
+    } else {
+        select.value = `${selectedYear}-01`;
+    }
 }
 
 function renderMonthlyReport() {
@@ -547,8 +673,14 @@ function renderMonthlyReport() {
 
     const [year, month] = monthSelect.value.split('-');
     const monthIndex = parseInt(month) - 1;
+    const selectedYear = parseInt(year);
 
-    const students = system.getStudentsByClass(system.currentClassId);
+    // קבל חניכים מהקבוצה הנוכחית שהיו פעילים בשנה הנבחרת
+    const allStudentsInClass = system.students.filter(s => s.classId === system.currentClassId);
+    const students = allStudentsInClass.filter(s => 
+        s.activeYears && s.activeYears.includes(selectedYear)
+    );
+
     const table = document.getElementById('monthlyReportTable');
     if (!table) return;
 
@@ -563,6 +695,13 @@ function renderMonthlyReport() {
     table.innerHTML = headerHTML;
 
     const tbody = document.createElement('tbody');
+    
+    if (students.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="' + (daysInMonth + 1) + '" class="text-center">אין חניכים בשנה זו</td></tr>';
+        table.appendChild(tbody);
+        return;
+    }
+
     students.forEach(student => {
         let rowHTML = `<tr><td>${student.firstName} ${student.lastName} <span class="status-tag ${student.registrationStatus === 'Registered' ? 'status-registered' : 'status-pending'}">🟢</span></td>`;
         
@@ -594,6 +733,58 @@ function renderSettings() {
 // ============================================
 
 document.addEventListener('DOMContentLoaded', () => {
+    // ============================================
+    // SUCCESS & ERROR NOTIFICATIONS
+    // ============================================
+    
+    function showNotification(message, type = 'success') {
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.textContent = message;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 5px;
+            font-weight: 600;
+            z-index: 9999;
+            animation: slideIn 0.3s ease-out;
+            ${type === 'success' ? 'background-color: #27ae60; color: white;' : 'background-color: #e74c3c; color: white;'}
+        `;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.style.animation = 'slideOut 0.3s ease-out';
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+
+    // Add CSS animations to head
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+    `;
+    document.head.appendChild(style);
     // Navigation
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -617,9 +808,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (classId) {
                 system.addStudent(firstName, lastName, grade, age, classId, registered);
                 addStudentForm.reset();
+                showNotification(`✅ חניך ${firstName} ${lastName} נוסף בהצלחה!`, 'success');
                 renderPage1();
             } else {
-                alert('בחר קבוצה');
+                showNotification('❌ בחר קבוצה', 'error');
             }
         });
     }
@@ -655,6 +847,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const modal = document.getElementById('addClassModal');
             if (modal) modal.style.display = 'none';
             
+            showNotification(`✅ קבוצה "${className}" נוצרה בהצלחה!`, 'success');
             renderPage1();
         });
     }
@@ -683,8 +876,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             closeEditModal();
+            showNotification('✅ החניך עודכן בהצלחה!', 'success');
             renderPage1();
-            alert('החניך עודכן בהצלחה!');
         });
     }
 
@@ -699,8 +892,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
             system.updateClass(classId, className);
             closeEditClassModal();
+            showNotification('✅ הקבוצה עודכנה בהצלחה!', 'success');
             renderPage1();
-            alert('הקבוצה עודכנה בהצלחה!');
+        });
+    }
+
+    // Add Existing Student Button
+    const addExistingStudentBtn = document.getElementById('addExistingStudentBtn');
+    if (addExistingStudentBtn) {
+        addExistingStudentBtn.addEventListener('click', () => {
+            openAddExistingStudentModal();
+        });
+    }
+
+    // Add Existing Student Form
+    const addExistingStudentForm = document.getElementById('addExistingStudentForm');
+    if (addExistingStudentForm) {
+        addExistingStudentForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const studentId = document.getElementById('existingStudentSelect').value;
+            const classId = system.currentClassId;
+
+            if (studentId && classId) {
+                const student = system.students.find(s => s.id === studentId);
+                system.addExistingStudent(studentId, classId);
+                closeAddExistingModal();
+                showNotification(`✅ ${student.firstName} הוסף מחדש ל-Pending!`, 'success');
+                renderPage2();
+            } else {
+                showNotification('❌ בחר חניך וודא שיש קבוצה פעילה', 'error');
+            }
         });
     }
 
@@ -715,6 +937,7 @@ document.addEventListener('DOMContentLoaded', () => {
             a.href = url;
             a.download = `attendance_${new Date().toISOString().split('T')[0]}.json`;
             a.click();
+            showNotification('✅ ייצוא הצליח! הקובץ הורד בהצלחה', 'success');
         });
     }
 
@@ -732,10 +955,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     if (system.importFromJSON(event.target.result)) {
-                        alert('ייבוא הצליח!');
+                        showNotification('✅ ייבוא הצליח בהצלחה!', 'success');
                         renderPage1();
                     } else {
-                        alert('שגיאה בייבוא');
+                        showNotification('❌ שגיאה בייבוא הקובץ', 'error');
                     }
                 };
                 reader.readAsText(file);
@@ -747,9 +970,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const resetBtn = document.getElementById('resetBtn');
     if (resetBtn) {
         resetBtn.addEventListener('click', () => {
-            if (confirm('האם אתה בטוח? זה ימחק את כל רשומות הנוכחות!')) {
+            if (confirm('האם אתה בטוח? זה ימחק את כל רשומות הנוכחות וחניכים יחזרו ל-Pending!')) {
                 system.resetAnnual();
-                alert('Reset הצליח!');
+                showNotification('✅ Reset הצליח! כל חניכים חזרו ל-Pending', 'success');
+                renderPage2();
             }
         });
     }
@@ -760,6 +984,7 @@ document.addEventListener('DOMContentLoaded', () => {
         clearAllBtn.addEventListener('click', () => {
             if (confirm('זה ימחק הכל! האם אתה בטוח?')) {
                 localStorage.removeItem('attendanceData');
+                localStorage.removeItem('lastAnnualReset');
                 location.reload();
             }
         });
@@ -776,35 +1001,30 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ============================================
-// MODAL CLICK HANDLERS (Outside DOMContentLoaded)
+// MODAL CLICK HANDLERS
 // ============================================
 
-// Close Add Class Modal when clicking outside
 window.addEventListener('click', (e) => {
-    const modal = document.getElementById('addClassModal');
-    if (e.target === modal) {
-        modal.style.display = 'none';
-    }
+    const modals = [
+        document.getElementById('addClassModal'),
+        document.getElementById('editStudentModal'),
+        document.getElementById('editClassModal'),
+        document.getElementById('addExistingStudentModal')
+    ];
+
+    modals.forEach(modal => {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
 });
 
-// Close Edit Student Modal when clicking outside
-window.addEventListener('click', (e) => {
-    const editModal = document.getElementById('editStudentModal');
-    if (e.target === editModal) {
-        editModal.style.display = 'none';
-    }
-});
-
-// Close Edit Class Modal when clicking outside
-window.addEventListener('click', (e) => {
-    const editClassModal = document.getElementById('editClassModal');
-    if (e.target === editClassModal) {
-        editClassModal.style.display = 'none';
-    }
-});
-
-// Month Selector Change
+// Year Selector Change
 document.addEventListener('change', (e) => {
+    if (e.target.id === 'yearSelect') {
+        updateMonthSelector();
+        renderMonthlyReport();
+    }
     if (e.target.id === 'monthSelect') {
         renderMonthlyReport();
     }
