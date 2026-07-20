@@ -141,7 +141,7 @@
   - Success notifications
   - Tooltips/help text
 
-- [ ] **Task 21:** Testing + bug fixes
+- [X] **Task 21:** Testing + bug fixes
   - Test all CRUD operations
   - Test localStorage persistence
   - Test import/export
