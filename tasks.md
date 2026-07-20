@@ -148,7 +148,7 @@
   - Cross-browser testing (Chrome, Firefox)
   - Edge cases handling
 
-- [ ] **Task 22:** Create comprehensive README.md
+- [X] **Task 22:** Create comprehensive README.md
   - Project description
   - Features list
   - How to run locally
@@ -161,7 +161,7 @@
 
 ## **PHASE 7: Final Submission**
 
-- [ ] **Task 23:** Cleanup code + comments
+- [X] **Task 23:** Cleanup code + comments
   - Add comments to functions
   - Remove console logs
   - Code formatting
